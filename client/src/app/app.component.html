@@ -1,9 +1,2 @@
 <h1>Welcome to File upload!</h1>
-<input
-  style="display: block"
-  type="file"
-  (change)="onFileChanged($event)"
-  #fileInput
-/>
-<button (click)="fileInput.click()">Select File</button>
-<button (click)="onUpload()">Upload!</button>
+<button (click)="uploadFile()">Upload!</button>

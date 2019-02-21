@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
+import { DOCUMENT } from '@angular/common';
 
 @Component({
   selector: 'app-root',
@@ -9,15 +10,29 @@ import { HttpClient, HttpEventType } from '@angular/common/http';
 export class AppComponent {
   selectedFile: File;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    @Inject(DOCUMENT) private document: Document,
+    private http: HttpClient
+  ) {}
 
-  onFileChanged(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    this.selectedFile = target.files[0];
-    console.log(event);
+  uploadFile(): void {
+    console.log('uploadFile');
+    let fileInput = this.document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.addEventListener('change', event => {
+      const target = event.target as HTMLInputElement;
+      this.selectedFile = target.files[0];
+      console.log(event);
+      // send immideatly
+      this.onChoosedFileToUpload();
+      fileInput = null;
+    });
+    fileInput.click();
   }
 
-  onUpload(): void {
+
+  onChoosedFileToUpload(): void {
+    console.log('onClickToUpload');
     const uploadData = new FormData();
     uploadData.append('upload_file', this.selectedFile, this.selectedFile.name);
     this.http
@@ -36,8 +51,10 @@ export class AppComponent {
             break;
           case HttpEventType.UploadProgress:
             const kbLoaded = Math.round(event.loaded / 1024 / 1024);
-            const percent = Math.round(event.loaded * 100 / event.total);
-            console.log(`Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`);
+            const percent = Math.round((event.loaded * 100) / event.total);
+            console.log(
+              `Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`
+            );
             break;
           case HttpEventType.Response:
             console.log('😺 Done!', event.body);
