@@ -22,8 +22,8 @@ export class AppComponent {
     uploadData.append('upload_file', this.selectedFile, this.selectedFile.name);
     this.http
       .post('http://localhost:3000/upload', uploadData, {
-        reportProgress: true,
-        observe: 'events',
+        reportProgress: true, // Без observe: 'events' не работает
+        observe: 'events', // без reportProgress: true только HttpEventType.Sent и HttpEventType.Response
       })
       .subscribe(event => {
         // console.log(event);
