@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 
 @Component({
   selector: 'app-root',
@@ -21,9 +21,27 @@ export class AppComponent {
     const uploadData = new FormData();
     uploadData.append('upload_file', this.selectedFile, this.selectedFile.name);
     this.http
-      .post('http://localhost:3000/upload', uploadData)
-      .subscribe(res => {
-        console.log(res);
+      .post('http://localhost:3000/upload', uploadData, {
+        reportProgress: true,
+        observe: 'events',
+      })
+      .subscribe(event => {
+        // console.log(event);
+        switch (event.type) {
+          case HttpEventType.Sent:
+            console.log('Request sent!');
+            break;
+          case HttpEventType.ResponseHeader:
+            console.log('Response header received!');
+            break;
+          case HttpEventType.UploadProgress:
+            const kbLoaded = Math.round(event.loaded / 1024 / 1024);
+            const percent = Math.round(event.loaded * 100 / event.total);
+            console.log(`Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`);
+            break;
+          case HttpEventType.Response:
+            console.log('😺 Done!', event.body);
+        }
       });
   }
 }
