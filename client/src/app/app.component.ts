@@ -1,64 +1,78 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
+
+import { fromEvent, Subject } from 'rxjs';
+import { mergeMap, finalize, takeUntil, first } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent {
-  selectedFile: File;
+export class AppComponent implements OnDestroy {
+  private destroy$ = new Subject<void>();
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
     private http: HttpClient
   ) {}
 
-  uploadFile(): void {
-    console.log('uploadFile');
+  /**
+   * Open file dialog and upload file to server
+   */
+  public chooseAndUploadFile(): void {
     let fileInput = this.document.createElement('input');
     fileInput.type = 'file';
-    fileInput.addEventListener('change', event => {
-      const target = event.target as HTMLInputElement;
-      this.selectedFile = target.files[0];
-      console.log(event);
-      // send immideatly
-      this.onChoosedFileToUpload();
-      fileInput = null;
-    });
+    fromEvent(fileInput, 'change')
+      .pipe(
+        first(),
+        mergeMap(event => {
+          const target = event.target as HTMLInputElement;
+          const uploadData = new FormData();
+          const selectedFile = target.files[0];
+          uploadData.append('upload_file', selectedFile, selectedFile.name);
+          return this.http.post('http://localhost:3000/upload', uploadData, {
+            reportProgress: true, // Без observe: 'events' не работает
+            observe: 'events', // без reportProgress: true только HttpEventType.Sent и HttpEventType.Response
+          });
+        }),
+        finalize(() => {
+          fileInput = null;
+          console.log('fileInput = null');
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(
+        event => {
+          // console.log(event);
+          switch (event.type) {
+            case HttpEventType.Sent:
+              console.log('Request sent!');
+              break;
+            case HttpEventType.ResponseHeader:
+              console.log('Response header received!');
+              break;
+            case HttpEventType.UploadProgress:
+              const kbLoaded = Math.round(event.loaded / 1024 / 1024);
+              const percent = Math.round((event.loaded * 100) / event.total);
+              console.log(
+                `Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`
+              );
+              break;
+            case HttpEventType.Response:
+              console.log('😺 Done!', event.body);
+          }
+        },
+        () => console.log('Upload error'),
+        () => console.log('Upload complete')
+      );
     fileInput.click();
   }
 
-
-  onChoosedFileToUpload(): void {
-    console.log('onClickToUpload');
-    const uploadData = new FormData();
-    uploadData.append('upload_file', this.selectedFile, this.selectedFile.name);
-    this.http
-      .post('http://localhost:3000/upload', uploadData, {
-        reportProgress: true, // Без observe: 'events' не работает
-        observe: 'events', // без reportProgress: true только HttpEventType.Sent и HttpEventType.Response
-      })
-      .subscribe(event => {
-        // console.log(event);
-        switch (event.type) {
-          case HttpEventType.Sent:
-            console.log('Request sent!');
-            break;
-          case HttpEventType.ResponseHeader:
-            console.log('Response header received!');
-            break;
-          case HttpEventType.UploadProgress:
-            const kbLoaded = Math.round(event.loaded / 1024 / 1024);
-            const percent = Math.round((event.loaded * 100) / event.total);
-            console.log(
-              `Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`
-            );
-            break;
-          case HttpEventType.Response:
-            console.log('😺 Done!', event.body);
-        }
-      });
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }
