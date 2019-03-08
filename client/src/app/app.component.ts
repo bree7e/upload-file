@@ -30,8 +30,9 @@ export class AppComponent implements OnDestroy {
         first(),
         mergeMap(event => {
           const target = event.target as HTMLInputElement;
-          const uploadData = new FormData();
           const selectedFile = target.files[0];
+          // formData обязательно в 2 строчки
+          const uploadData = new FormData();
           uploadData.append('upload_file', selectedFile, selectedFile.name);
           return this.http.post('http://localhost:3000/upload', uploadData, {
             reportProgress: true, // Без observe: 'events' не работает
@@ -39,6 +40,7 @@ export class AppComponent implements OnDestroy {
           });
         }),
         finalize(() => {
+          // должен быть удален, т.к. счетчик ссылок обнулится
           fileInput = null;
           console.log('fileInput = null');
         }),
