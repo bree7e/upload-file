@@ -7,8 +7,10 @@ import { mergeMap, finalize, takeUntil, first } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
+  template: `
+    <h1>Welcome to File upload!</h1>
+    <button (click)="chooseAndUploadFile()">Upload!</button>
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnDestroy {
