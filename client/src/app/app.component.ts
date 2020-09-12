@@ -3,6 +3,7 @@ import {
   Inject,
   OnDestroy,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
@@ -23,7 +24,7 @@ import { mergeMap, finalize, takeUntil, first } from 'rxjs/operators';
     </div>
     <button (click)="chooseAndUploadFile()">Upload!</button>
   `,
-  changeDetection: ChangeDetectionStrategy.Default,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppComponent implements OnDestroy {
   private destroy$ = new Subject<void>();
@@ -31,6 +32,7 @@ export class AppComponent implements OnDestroy {
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
+    private cdr: ChangeDetectorRef,
     private http: HttpClient
   ) {}
 
@@ -75,6 +77,7 @@ export class AppComponent implements OnDestroy {
               const kbLoaded = Math.round(event.loaded / 1024 / 1024);
               const percent = Math.round((event.loaded * 100) / event.total);
               this.progressValue = percent;
+              this.cdr.markForCheck();
               console.log(
                 `Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`
               );
