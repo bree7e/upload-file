@@ -1,4 +1,9 @@
-import { Component, Inject, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Inject,
+  OnDestroy,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
 
@@ -9,12 +14,20 @@ import { mergeMap, finalize, takeUntil, first } from 'rxjs/operators';
   selector: 'app-root',
   template: `
     <h1>Welcome to File upload!</h1>
+    <div class="progress form-group">
+      <div
+        class="progress-bar progress-bar-striped bg-success"
+        role="progressbar"
+        [style.width.%]="progressValue"
+      ></div>
+    </div>
     <button (click)="chooseAndUploadFile()">Upload!</button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.Default,
 })
 export class AppComponent implements OnDestroy {
   private destroy$ = new Subject<void>();
+  progressValue: number;
 
   constructor(
     @Inject(DOCUMENT) private document: Document,
@@ -30,7 +43,7 @@ export class AppComponent implements OnDestroy {
     fromEvent(fileInput, 'change')
       .pipe(
         first(),
-        mergeMap(event => {
+        mergeMap((event) => {
           const target = event.target as HTMLInputElement;
           const selectedFile = target.files[0];
           // formData обязательно в 2 строчки
@@ -49,7 +62,7 @@ export class AppComponent implements OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(
-        event => {
+        (event) => {
           // console.log(event);
           switch (event.type) {
             case HttpEventType.Sent:
@@ -61,6 +74,7 @@ export class AppComponent implements OnDestroy {
             case HttpEventType.UploadProgress:
               const kbLoaded = Math.round(event.loaded / 1024 / 1024);
               const percent = Math.round((event.loaded * 100) / event.total);
+              this.progressValue = percent;
               console.log(
                 `Upload in progress! ${kbLoaded}Mb loaded (${percent}%)`
               );
